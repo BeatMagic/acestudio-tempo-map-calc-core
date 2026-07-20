@@ -1,0 +1,6 @@
+build/
+build-*/
+/generated/
+*.o
+*.wasm
+*.mjs.map

@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build-test:
+    name: ${{ matrix.os }} (clang, native + wasm parity)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest] # ubuntu = x86_64, macos = arm64; both with clang
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Native build under clang (dependency-free by construction) + the analytic unit test and the
+      # shared-fixture test. The fixture test also emits build/native.json for the parity step.
+      - name: Native configure & build (clang)
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j
+
+      - name: Native tests
+        run: ctest --test-dir build --output-on-failure
+
+      # WASM build of the SAME core sources with stock, pinned Emscripten (no Qt), then assert
+      # the WASM build agrees with the canonical fixture AND with the native outputs (tolerance,
+      # not bit-for-bit). This is where wasm <-> c++ drift is caught on every PR.
+      - name: Setup Emscripten (pinned)
+        uses: mymindstorm/setup-emsdk@v16
+        with:
+          version: 4.0.7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Build WASM parity module
+        run: bash wasm/build.sh build-wasm
+
+      - name: WASM <-> C++ parity over the shared fixture
+        run: node wasm/run_fixture.mjs build-wasm/tempo_wasm.mjs fixtures/tempo_curve_cases.json build/native.json
