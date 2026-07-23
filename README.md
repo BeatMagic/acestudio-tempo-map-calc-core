@@ -76,6 +76,42 @@ Two things the caller owns before converting: set each point's `bendFactor` to `
 call `recomputeTimes()`. Points must be **sorted strictly ascending by `pos`** (no two points
 share a position); the read-only conversion functions assume this.
 
+## Use it from JavaScript / TypeScript (npm)
+
+The same core is published as a prebuilt WebAssembly module — no C++ or Emscripten toolchain needed
+to consume it:
+
+```bash
+npm install @timedomain/acestudio-tempo-map-calc
+```
+
+```js
+import createTempoMapCalc from "@timedomain/acestudio-tempo-map-calc";
+
+const mod = await createTempoMapCalc();
+const calc = new mod.TempoMapCalc();
+
+// Hydrate once from a tempo snapshot: three parallel arrays (positions in ticks, BPMs, bends),
+// sorted strictly ascending by position. Re-hydrate whenever the tempo map changes.
+calc.hydrate([480, 1440, 2400], [120, 180, 90], [0, 0, 0]);
+
+// Single-value conversions (non-allocating):
+calc.pos2Time(960); // seconds at tick 960
+calc.time2Pos(1.5); // tick position at 1.5 s
+
+// Bulk path — zero-copy typed arrays aliasing the WASM heap, no per-value marshaling. Fill the
+// input view (sorted ascending), convert, then read the output view before allocating again:
+const input = calc.inputView(3);
+input.set([0, 480, 960]);
+calc.convertPos2Time();
+const seconds = calc.outputView(); // Float64Array, one result per input
+
+calc.delete(); // free the WASM-side object when done
+```
+
+The published tarball carries the prebuilt `.wasm`, an ES-module loader, and TypeScript types; it is
+built from these sources with pinned Emscripten in the repo's release CI (never committed to git).
+
 ## Build & test
 
 **Native** (any C++23 compiler; no dependencies):

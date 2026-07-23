@@ -4,3 +4,8 @@ build-*/
 *.o
 *.wasm
 *.mjs.map
+
+# npm package build artifacts — regenerated in release CI, shipped in the tarball, never committed.
+/dist/
+node_modules/
+*.tgz

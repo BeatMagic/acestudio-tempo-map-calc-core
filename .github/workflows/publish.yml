@@ -1,0 +1,34 @@
+name: publish
+
+# Publish @timedomain/acestudio-tempo-map-calc to npm on a version tag, via npm trusted publishing
+# (OIDC): no long-lived token, and provenance is generated automatically.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  id-token: write # OIDC for npm trusted publishing
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Unlike a typical JS package, this one compiles the C++ core to WASM, so the release build
+      # needs Emscripten (pinned for a reproducible artifact).
+      - uses: mymindstorm/setup-emsdk@v16
+        with:
+          version: 4.0.7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false # never cache in release builds
+
+      - run: npm run build
+      - run: npm test
+      - run: npm publish # public via publishConfig; OIDC handles auth
