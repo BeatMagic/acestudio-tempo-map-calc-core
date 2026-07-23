@@ -46,3 +46,30 @@ jobs:
 
       - name: WASM <-> C++ parity over the shared fixture
         run: node wasm/run_fixture.mjs build-wasm/tempo_wasm.mjs fixtures/tempo_curve_cases.json build/native.json
+
+  # Build the @timedomain/acestudio-tempo-map-calc npm artifact (prebuilt WASM + ES glue + .d.ts)
+  # with the same pinned Emscripten, then drive its frozen public API over the shared fixture and
+  # verify the tarball packs cleanly. This exercises the production embind binding on every PR.
+  package:
+    name: npm package (embind, pinned emscripten)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Emscripten (pinned)
+        uses: mymindstorm/setup-emsdk@v16
+        with:
+          version: 4.0.7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Build package artifact
+        run: npm run build
+
+      - name: Frozen-API parity over the shared fixture
+        run: npm test
+
+      - name: Verify tarball packs cleanly
+        run: npm pack --dry-run

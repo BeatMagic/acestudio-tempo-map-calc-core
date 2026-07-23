@@ -10,8 +10,10 @@ The same `src/TempoCurveCore.cpp` + `include/TempoCurveCore.h` feed two builds:
 1. **ACE Studio desktop** — pulls this repo in as a git submodule and compiles it in-tree behind a
    thin wrapper that owns editing, undo, and storage. Studio's public API is unchanged by living
    on top of the core.
-2. **`@timedomain/acestudio-tempo-map-calc`** — builds the core to WebAssembly with stock
-   Emscripten and ships the prebuilt artifact on public npm.
+2. **`@timedomain/acestudio-tempo-map-calc`** — the npm package built **from this repo itself**
+   (`wasm/tempo_embind.cpp` + `package.json` here): stock Emscripten compiles the core to
+   WebAssembly and the prebuilt artifact ships on public npm. No submodule; the package tracks the
+   core sources in its own tree, so a core change is a package change in the same commit.
 
 Because both compile the *same* file, there is no port to drift: the tempo curve is canonical by
 construction. Design rationale lives in ADR 0086 in the (internal) ACE Studio repo.
@@ -30,24 +32,42 @@ Anything a change here must preserve, so both builds keep working:
 
 ## Propagation on a behavioral change
 
-Both consumers pin this repo at a **specific commit**, not a moving branch, so a core change is
-never silently absorbed — each consumer opts in by bumping its pin in a reviewed PR.
+The npm package lives in this repo, so it moves with the sources automatically. Studio pins this
+repo at a **specific commit** (submodule), so a core change is never silently absorbed there — it
+opts in by bumping its pin in a reviewed PR.
 
 1. **Land the change here first.** Merge to `main` only with green CI (native + WASM parity on
-   both OSes). `main` is the only branch consumers pin to.
+   both OSes, plus the npm package build + frozen-API parity). `main` is the branch Studio pins to
+   and the branch releases are tagged from.
 2. **Behavioral change** (conversion math or its results):
+   - **npm package:** already tracks the new sources — [cut a release](#releasing-the-npm-package)
+     so the published `.wasm` is rebuilt from them.
    - **Studio:** in the submodule dir, `git checkout <new-sha>`, then `git add` the submodule path
      from the superproject and open a PR. Studio's `tst_TempoAutomation` +
      `tst_TempoAgentContractE2E` re-validate the wrapper against the bumped core.
-   - **SDK** (`@timedomain/acestudio-tempo-map-calc`): bump its submodule pin and cut a release so
-     the published `.wasm` is rebuilt from the new sources. Notify the SDK owner.
-   - Keep Studio and the SDK on the **same** core commit whenever a behavioral change lands, so the
-     desktop engine and the shipped WASM library never diverge.
-3. **Non-behavioral change** (docs, tests, CI, fixture tooling): bump consumers whenever
-   convenient; no artifact rebuild is forced.
+   - Keep Studio and the published package on the **same** core commit whenever a behavioral change
+     lands, so the desktop engine and the shipped WASM library never diverge.
+3. **Non-behavioral change** (docs, tests, CI, fixture tooling): bump Studio's pin / cut a package
+   release whenever convenient; no artifact rebuild is forced.
 
 There is deliberately no cross-repo hash/lock guard — this repo's own CI is the correctness and
-parity net, and pins move by review.
+parity net, and Studio's pin moves by review.
+
+## Releasing the npm package
+
+The WASM artifact is built for distribution **only** in release CI (`.github/workflows/publish.yml`),
+never committed. Publishing uses npm **trusted publishing (OIDC)** — no long-lived publish token in
+the repo. To publish `@timedomain/acestudio-tempo-map-calc`:
+
+1. Bump `version` in `package.json` and merge to `main`.
+2. Tag the release commit `vX.Y.Z` and push the tag (or publish a GitHub Release, which creates the
+   tag).
+3. `publish.yml` builds the artifact with pinned Emscripten, runs the frozen-API parity test, and
+   runs `npm publish --access public`. It authenticates over OIDC via the package's trusted
+   publisher — no `NPM_TOKEN` secret — and npm generates provenance automatically.
+
+Build and check the package locally with `npm run build` then `node --test test/parity.test.mjs`,
+or inspect the tarball with `npm pack --dry-run`.
 
 ## Regenerating the shared fixture
 

@@ -1,0 +1,47 @@
+{
+  "name": "@timedomain/acestudio-tempo-map-calc",
+  "version": "0.1.0",
+  "description": "ACE Studio's exact tempo-map math (tick <-> seconds) as a prebuilt WebAssembly module — align with the DAW's tempo curve instead of approximating it.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/tempo_map_calc.d.ts",
+      "default": "./dist/tempo_map_calc.mjs"
+    }
+  },
+  "types": "./dist/tempo_map_calc.d.ts",
+  "files": [
+    "dist/tempo_map_calc.mjs",
+    "dist/tempo_map_calc.wasm",
+    "dist/tempo_map_calc.d.ts"
+  ],
+  "scripts": {
+    "build": "bash wasm/build_package.sh",
+    "test": "node --test test/parity.test.mjs",
+    "prepack": "bash wasm/build_package.sh"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BeatMagic/acestudio-tempo-map-calc-core.git"
+  },
+  "homepage": "https://github.com/BeatMagic/acestudio-tempo-map-calc-core#readme",
+  "bugs": "https://github.com/BeatMagic/acestudio-tempo-map-calc-core/issues",
+  "keywords": [
+    "ace-studio",
+    "tempo",
+    "tempo-map",
+    "bpm",
+    "daw",
+    "music",
+    "wasm",
+    "webassembly"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
+}
