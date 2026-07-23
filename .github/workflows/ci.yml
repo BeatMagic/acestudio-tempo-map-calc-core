@@ -33,7 +33,7 @@ jobs:
       # the WASM build agrees with the canonical fixture AND with the native outputs (tolerance,
       # not bit-for-bit). This is where wasm <-> c++ drift is caught on every PR.
       - name: Setup Emscripten (pinned)
-        uses: mymindstorm/setup-emsdk@v16
+        uses: emscripten-core/setup-emsdk@v16
         with:
           version: 4.0.7
 
@@ -57,7 +57,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Setup Emscripten (pinned)
-        uses: mymindstorm/setup-emsdk@v16
+        uses: emscripten-core/setup-emsdk@v16
         with:
           version: 4.0.7
 

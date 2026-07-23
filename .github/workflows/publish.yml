@@ -19,7 +19,7 @@ jobs:
 
       # Unlike a typical JS package, this one compiles the C++ core to WASM, so the release build
       # needs Emscripten (pinned for a reproducible artifact).
-      - uses: mymindstorm/setup-emsdk@v16
+      - uses: emscripten-core/setup-emsdk@v16
         with:
           version: 4.0.7
 
