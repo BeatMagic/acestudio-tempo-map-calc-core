@@ -26,8 +26,6 @@ jobs:
         with:
           version: 4.0.7
 
-      # A major line, not a pin: setup-node resolves it to the newest 24.x, whose bundled npm
-      # is well past the 11.15.0 that `npm stage` needs. Pinning a patch here could undercut that.
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
