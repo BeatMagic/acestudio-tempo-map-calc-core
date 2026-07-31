@@ -1,7 +1,10 @@
 name: publish
 
-# Publish @timedomain/acestudio-tempo-map-calc to npm on a version tag, via npm trusted publishing
-# (OIDC): no long-lived token, and provenance is generated automatically.
+# Stage @timedomain/acestudio-tempo-map-calc to npm on a version tag, via npm trusted publishing
+# (OIDC): no long-lived token, and provenance is generated automatically. This uses STAGED
+# publishing — CI can only queue a release; a maintainer must approve it (with 2FA) from a trusted
+# device before it goes live. The package's trusted publisher must be configured as stage-only on
+# npmjs.com, so a plain `npm publish` from this workflow is rejected by the registry.
 
 on:
   push:
@@ -12,7 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  publish:
+  stage:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -29,6 +32,9 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           package-manager-cache: false # never cache in release builds
 
+      # `npm stage` needs npm >= 11.15.0; the version bundled with Node may be older.
+      - run: npm install -g npm@^11.15.0
+
       - run: npm run build
       - run: npm test
-      - run: npm publish # public via publishConfig; OIDC handles auth
+      - run: npm stage publish # public via publishConfig; OIDC handles auth
