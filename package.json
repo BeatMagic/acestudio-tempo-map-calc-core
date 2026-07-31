@@ -1,7 +1,7 @@
 {
   "name": "@timedomain/acestudio-tempo-map-calc",
-  "version": "0.1.0",
-  "description": "ACE Studio's exact tempo-map math (tick <-> seconds) as a prebuilt WebAssembly module — align with the DAW's tempo curve instead of approximating it.",
+  "version": "0.1.1",
+  "description": "Convert between ticks and seconds using ACE Studio's exact tempo curve.",
   "license": "MIT",
   "type": "module",
   "exports": {
