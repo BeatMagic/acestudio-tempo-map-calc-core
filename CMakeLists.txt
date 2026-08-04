@@ -1,8 +1,8 @@
 # acestudio-tempo-map-calc-core — the canonical tick<->seconds tempo-map conversion core. This
 # CMake drives the NATIVE build: the static core library and its tests, built under stock clang++
 # with nothing extra on the include path, so "dependency-free" is enforced by construction. The
-# WebAssembly build is produced separately by wasm/build.sh (stock Emscripten) — see README; it
-# compiles the SAME src/TempoCurveCore.cpp.
+# WebAssembly build is produced separately by wasm/build.sh (stock Emscripten), which compiles the
+# SAME src/TempoCurveCore.cpp; see docs/building.md.
 cmake_minimum_required(VERSION 3.20)
 project(acestudio_tempo_map_calc_core CXX)
 
