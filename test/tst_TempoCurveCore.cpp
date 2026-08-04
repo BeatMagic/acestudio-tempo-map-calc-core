@@ -1,6 +1,9 @@
 // Analytic unit test for TempoCurveCore. It drives the std::span conversion API directly against
 // an independent closed-form oracle (elapsed time at a constant tempo), covering the lead-in,
-// straddling, all-negative, empty, curved, and corrupt-data cases. Because this target compiles
+// straddling, all-negative, empty, curved, bent and corrupt-data cases. Bent segments have no
+// closed form, so they are pinned by the properties that do not need one: the equal-endpoint case
+// where bend must NOT curve anything (and the oracle still applies), monotonicity and invertibility
+// across both signs, and each sign deviating from the bend-free curve in its own direction. Because this target compiles
 // TempoCurveCore.cpp with nothing extra on its include path, it also enforces the core's
 // dependency-free constraint: a stray include fails the build.
 //
@@ -40,17 +43,25 @@ double constTime(double ticks, double bpm)
     return ticks * kR / bpm;
 }
 
+// One control point, with `bend` defaulting to 0 so the bend-free cases read unchanged.
+struct PointSpec
+{
+    double pos = 0.0;
+    double bpm = 0.0;
+    double bend = 0.0;
+};
+
 // Build points the way the core expects: bendFactor = exp(bend), then recomputeTimes().
 // An empty list stays empty (the no-control-points fallback).
-std::vector<TempoPoint> makePoints(std::initializer_list<std::pair<double, double>> posBpm)
+std::vector<TempoPoint> makePoints(std::initializer_list<PointSpec> spec)
 {
     std::vector<TempoPoint> pts;
-    for (const auto &[pos, bpm] : posBpm) {
+    for (const auto &s : spec) {
         TempoPoint p;
-        p.pos = pos;
-        p.bpm = bpm;
-        p.bend = 0.0;
-        p.bendFactor = std::exp(0.0);
+        p.pos = s.pos;
+        p.bpm = s.bpm;
+        p.bend = s.bend;
+        p.bendFactor = std::exp(s.bend);
         pts.push_back(p);
     }
     recomputeTimes(pts);
@@ -140,6 +151,61 @@ void nonPositiveBpmStaysFinite()
     }
 }
 
+// `bend` shapes the ramp leaving a point (bendFactor = exp(bend)). Equal bpm at both ends means
+// there is no ramp to shape, so the constant-tempo closed form must still hold — the one bend case
+// with an independent oracle. It also pins the precedence: checking for equal endpoints has to come
+// before applying bend, or a segment that must stay straight gets curved.
+void bendWithEqualBpmStaysConstant()
+{
+    for (const double bend : {-2.0, -0.5, 0.5, 2.0}) {
+        auto t = makePoints({{0.0, 120.0, bend}, {960.0, 120.0, 0.0}});
+        check(std::abs(pos2Time(t, 0.0) - 0.0) < kEps, "bend equal-bpm anchor");
+        check(std::abs(pos2Time(t, 240.0) - constTime(240.0, 120.0)) < kEps, "bend equal-bpm 240");
+        check(std::abs(pos2Time(t, 480.0) - constTime(480.0, 120.0)) < kEps, "bend equal-bpm 480");
+        check(std::abs(pos2Time(t, 1440.0) - constTime(1440.0, 120.0)) < kEps, "bend equal-bpm tail");
+        check(std::abs(time2Pos(t, constTime(480.0, 120.0)) - 480.0) < kEps, "bend equal-bpm inverse");
+    }
+}
+
+// A curved segment must still behave like a tempo map: anchored at tick 0, monotonic, and
+// invertible. Asserted across both signs of bend, since a sign error is the easiest way to get a
+// curve that looks plausible and inverts wrongly.
+void bendStaysMonotonicAndInvertible()
+{
+    for (const double bend : {-2.0, -1.5, -0.5, 0.5, 1.5, 2.0}) {
+        auto t = makePoints({{0.0, 120.0, bend}, {1920.0, 180.0, -bend}, {3840.0, 90.0, 0.0}});
+        check(std::abs(pos2Time(t, 0.0) - 0.0) < kEps, "bend anchor");
+        double prev = pos2Time(t, -600.0);
+        for (double pos = -600.0; pos <= 4800.0; pos += 41.0) {
+            const double time = pos2Time(t, pos);
+            check(std::isfinite(time), "bend pos2Time finite");
+            check(time >= prev - kEps, "bend monotonic");
+            prev = time;
+            check(std::abs(time2Pos(t, time) - pos) < 1e-4, "bend pos->time->pos");
+        }
+    }
+}
+
+// bend must actually do something, and the two signs must do opposite things — otherwise a consumer
+// could drop the field, or flip its sign, and still match. Over a rising segment the bend=0 log ramp
+// sits strictly between the two exponential shapes.
+void bendChangesTheCurveBySign()
+{
+    auto straight = makePoints({{0.0, 120.0, 0.0}, {1920.0, 180.0, 0.0}});
+    auto positive = makePoints({{0.0, 120.0, 2.0}, {1920.0, 180.0, 0.0}});
+    auto negative = makePoints({{0.0, 120.0, -2.0}, {1920.0, 180.0, 0.0}});
+
+    // Interior samples only: tick 0 is pinned for every curve, so it can never show a difference.
+    for (const double pos : {480.0, 960.0, 1440.0, 1920.0}) {
+        const double s = pos2Time(straight, pos);
+        const double p = pos2Time(positive, pos);
+        const double n = pos2Time(negative, pos);
+        check(std::abs(p - s) > kEps, "positive bend changes the curve");
+        check(std::abs(n - s) > kEps, "negative bend changes the curve");
+        check((p - s) * (n - s) < 0.0, "the two bend signs deviate in opposite directions");
+    }
+}
+
 // Bulk conversion over the std::span range API: assert the bulk path agrees with the
 // single-value path and round-trips, on a realistic varying-tempo curve at a 100k-point scale.
 void bulkRangeMatchesSingleValue()
@@ -181,6 +247,9 @@ int main()
     roundTripAndMonotonic();
     emptyListFallback();
     nonPositiveBpmStaysFinite();
+    bendWithEqualBpmStaysConstant();
+    bendStaysMonotonicAndInvertible();
+    bendChangesTheCurveBySign();
     bulkRangeMatchesSingleValue();
 
     std::printf("%d/%d checks passed\n", g_checks - g_failures, g_checks);

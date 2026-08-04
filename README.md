@@ -151,6 +151,12 @@ the native and WASM builds.
    outputs match the expected values within `tolerance`. The numbers are the core's own
    full-precision outputs, so matching them means agreeing with ACE Studio's tempo math.
    `wasm/run_fixture.mjs` is a working example of a non-C++ consumer driving the fixture.
+3. Feed each point's `bend` back in — the `bend*` cases exist to catch a port that drops it. A
+   bend-free implementation still matches every constant-tempo case and every segment endpoint,
+   because endpoints are pinned by `recomputeTimes()` regardless of curve shape; it diverges only
+   in the interior of a bent segment. `bendEqualBpmStaysConstant` pins the other half of the rule:
+   when both endpoints carry the same BPM there is no ramp to shape, so bend must not curve
+   anything — check for equal endpoints before applying it.
 
 ## License
 
