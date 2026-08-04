@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <initializer_list>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -30,15 +31,24 @@ constexpr double kEps = 1e-7;
 
 double constTime(double ticks, double bpm) { return ticks * kR / bpm; }
 
-std::vector<TempoPoint> makePoints(std::initializer_list<std::pair<double, double>> posBpm)
+// One control point as a case declares it. `bend` defaults to 0, so the constant-tempo and
+// bend-free cases below read exactly as they did before it existed.
+struct PointSpec
+{
+    double pos = 0.0;
+    double bpm = 0.0;
+    double bend = 0.0;
+};
+
+std::vector<TempoPoint> makePoints(std::initializer_list<PointSpec> spec)
 {
     std::vector<TempoPoint> pts;
-    for (const auto &[pos, bpm] : posBpm) {
+    for (const auto &s : spec) {
         TempoPoint p;
-        p.pos = pos;
-        p.bpm = bpm;
-        p.bend = 0.0;
-        p.bendFactor = std::exp(0.0);
+        p.pos = s.pos;
+        p.bpm = s.bpm;
+        p.bend = s.bend;
+        p.bendFactor = std::exp(s.bend);
         pts.push_back(p);
     }
     recomputeTimes(pts);
@@ -67,9 +77,11 @@ struct Fixture
     std::string out;
     bool firstCase = true;
 
-    // posBpm: the case's control points (each bend is 0). Query methods take `t`, the same points
-    // after makePoints() (bendFactor + recomputeTimes), so the emitted golden is the core output.
-    void beginCase(const std::string &name, const std::vector<std::pair<double, double>> &posBpm, double tolerance)
+    // spec: the case's control points, exactly as a consumer must feed them back in — `bend`
+    // included, since a consumer that ignores it reproduces a straight ramp where the core draws
+    // a curved one. Query methods take `t`, the same points after makePoints() (bendFactor +
+    // recomputeTimes), so the emitted golden is the core output.
+    void beginCase(const std::string &name, const std::vector<PointSpec> &spec, double tolerance)
     {
         if (!firstCase)
             out += ",\n";
@@ -79,10 +91,10 @@ struct Fixture
         out += "      \"tolerance\": " + num(tolerance) + ",\n";
         out += "      \"points\": [";
         bool f = true;
-        for (const auto &[pos, bpm] : posBpm) {
+        for (const auto &s : spec) {
             out += f ? "" : ", ";
             f = false;
-            out += "{\"pos\": " + num(pos) + ", \"bpm\": " + num(bpm) + ", \"bend\": 0}";
+            out += "{\"pos\": " + num(s.pos) + ", \"bpm\": " + num(s.bpm) + ", \"bend\": " + num(s.bend) + "}";
         }
         out += "],\n";
     }
@@ -186,6 +198,68 @@ int main()
         std::vector<std::pair<double, double>> timeQueries;
         for (double pos : {0.0, 480.0, 960.0, 1440.0, 1920.0, 2400.0, 3000.0})
             timeQueries.emplace_back(pos2Time(t, pos), NA);
+        fx.time2pos(t, timeQueries);
+        fx.endCase();
+    }
+
+    // --- bendEqualBpmStaysConstant: bend != 0 but the SAME bpm at both ends. The model says equal
+    // endpoints mean constant tempo, so bend has nothing to shape and the closed form still
+    // applies — which makes this the one bend case with an independent oracle. It also pins the
+    // precedence: a consumer that applied bend before checking for equal endpoints would curve a
+    // segment that must stay straight, and would fail here rather than silently disagreeing. ---
+    {
+        auto t = makePoints({{0.0, 120.0, 1.5}, {960.0, 120.0, 0.0}});
+        fx.beginCase("bendEqualBpmStaysConstant", {{0.0, 120.0, 1.5}, {960.0, 120.0, 0.0}}, kEps);
+        fx.pos2time(t, {{0.0, 0.0},
+                        {240.0, constTime(240.0, 120.0)},
+                        {480.0, constTime(480.0, 120.0)},
+                        {960.0, constTime(960.0, 120.0)},
+                        {1440.0, constTime(1440.0, 120.0)}});
+        fx.time2pos(t, {{0.0, 0.0}, {constTime(480.0, 120.0), 480.0}});
+        fx.endCase();
+    }
+
+    // --- bendPositiveRamp / bendNegativeRamp: a single curved segment each, one accelerating and
+    // one decelerating. bend shapes the ramp exponentially (bendFactor = exp(bend)). The core has a
+    // closed form for that, but nothing independent to check the form against, so the canonical core
+    // output is the golden. Sampled at both control points, one tick either side of each, and
+    // interior quarters. A port that ignored bend, or applied it with the wrong sign, diverges over
+    // all of it: bend changes the segment's integral, not just its shape, so it moves the interior
+    // AND the time at the control point closing the segment. Only tick 0 — the origin
+    // recomputeTimes anchors — is invariant. ---
+    for (const auto &[name, from, to, bend] : {std::tuple {"bendPositiveRamp", 120.0, 180.0, 2.0},
+                                               std::tuple {"bendNegativeRamp", 180.0, 90.0, -1.5}}) {
+        const double end = 1920.0;
+        auto t = makePoints({{0.0, from, bend}, {end, to, 0.0}});
+        fx.beginCase(name, {{0.0, from, bend}, {end, to, 0.0}}, 1e-9);
+        std::vector<std::pair<double, double>> posQueries;
+        for (double pos : {0.0, 1.0, end * 0.25, end * 0.5, end * 0.75, end - 1.0, end, end + 480.0})
+            posQueries.emplace_back(pos, NA);
+        fx.pos2time(t, posQueries);
+        std::vector<std::pair<double, double>> timeQueries;
+        for (const auto &q : posQueries)
+            timeQueries.emplace_back(pos2Time(t, q.first), NA);
+        fx.time2pos(t, timeQueries);
+        fx.endCase();
+    }
+
+    // --- bendMultiPointBothSigns: the shape a real project produces — a constant lead, a strongly
+    // curved climb, a curved fall, and a constant tail — with bend of both signs so neither sign
+    // can be dropped without a diverging sample. Every position is >= 0 and strictly ascending, so
+    // an embedder whose edit surface refuses negative or unordered points can still push this case
+    // through unchanged. ---
+    {
+        const std::vector<PointSpec> spec {
+            {0.0, 120.0, 0.0}, {960.0, 180.0, 2.0}, {2880.0, 90.0, -1.5}, {3840.0, 90.0, 0.0}};
+        auto t = makePoints({{0.0, 120.0, 0.0}, {960.0, 180.0, 2.0}, {2880.0, 90.0, -1.5}, {3840.0, 90.0, 0.0}});
+        fx.beginCase("bendMultiPointBothSigns", spec, 1e-9);
+        std::vector<std::pair<double, double>> posQueries;
+        for (double pos : {0.0, 480.0, 959.0, 960.0, 961.0, 1440.0, 1920.0, 2400.0, 2880.0, 3360.0, 3840.0, 4800.0})
+            posQueries.emplace_back(pos, NA);
+        fx.pos2time(t, posQueries);
+        std::vector<std::pair<double, double>> timeQueries;
+        for (const auto &q : posQueries)
+            timeQueries.emplace_back(pos2Time(t, q.first), NA);
         fx.time2pos(t, timeQueries);
         fx.endCase();
     }
