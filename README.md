@@ -76,10 +76,8 @@ Both API references assume the terms defined in the tempo model, so start there.
 
 ## Contributing
 
-Issues and pull requests are welcome. One constraint is load-bearing: the core stays dependency-free
-and framework-free under both a plain toolchain and Emscripten, because the same file compiles into
-the desktop app and into the published WebAssembly package.
-[MAINTAINERS.md](MAINTAINERS.md) has the full shared-source contract.
+Issues are welcome, and are the most useful thing you can send. If you are considering a code change,
+open an issue first: these files are shared source, so see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
