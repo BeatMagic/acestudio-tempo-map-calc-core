@@ -22,11 +22,11 @@ the fixture.
 
 ## 3. Don't drop `bend`
 
-The `bend*` cases exist to catch a port that loses the field or flips its sign — the easiest mistake
-to make here, and the hardest to notice.
+The `bend*` cases exist to catch a port that loses the field or flips its sign. That is the easiest
+mistake to make here, and the hardest to notice.
 
 `bend` changes the *integral* over a bent segment, not merely its shape. So dropping it moves the
-interior of that segment **and** the cached time at the control point closing it — and therefore
+interior of that segment **and** the cached time at the control point closing it, and therefore
 every control point downstream. Only tick 0, the origin `recomputeTimes()` anchors, is invariant.
 
 What still looks healthy without `bend`, which is why the gap is easy to miss: every constant-tempo

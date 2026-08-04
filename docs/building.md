@@ -1,7 +1,7 @@
 # Building and testing
 
 For working on this repo, or building the C++ core from source. Consumers of the npm package need
-none of this — see [the JavaScript API](javascript-api.md).
+none of this; see [the JavaScript API](javascript-api.md).
 
 ## Native
 
@@ -15,10 +15,10 @@ ctest --test-dir build --output-on-failure
 
 That runs two tests:
 
-- **`tst_TempoCurveCore`** — the analytic unit test. It checks the conversion API against an
+- **`tst_TempoCurveCore`**: the analytic unit test. It checks the conversion API against an
   independent closed-form oracle (elapsed time at a constant tempo), plus oracle-free properties
   (monotonicity, invertibility, sign sensitivity) for the bent segments no independent oracle covers.
-- **`run_fixture`** — drives the core over the shared fixture
+- **`run_fixture`**: drives the core over the shared fixture
   ([`fixtures/tempo_curve_cases.json`](../fixtures/tempo_curve_cases.json)) on both the scalar and
   bulk paths, and emits `build/native.json` for the parity check below.
 
@@ -37,7 +37,7 @@ node wasm/run_fixture.mjs build-wasm/tempo_wasm.mjs fixtures/tempo_curve_cases.j
 ```
 
 This builds the *same* sources to WebAssembly and asserts the WASM build agrees with the native build
-over the shared fixture, on both the scalar and bulk-range paths — within each case's tolerance
+over the shared fixture, on both the scalar and bulk-range paths, within each case's tolerance
 rather than bit-for-bit. Cross-arch and WASM last-ULP differences are fine; behavioral drift is not.
 
 ## What CI proves

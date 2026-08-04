@@ -1,7 +1,7 @@
 # JavaScript API
 
 [`@timedomain/acestudio-tempo-map-calc`](https://www.npmjs.com/package/@timedomain/acestudio-tempo-map-calc)
-is this same core compiled to WebAssembly — no C++ or Emscripten toolchain needed to consume it. See
+is this same core compiled to WebAssembly, so consuming it needs no C++ or Emscripten toolchain. See
 [the tempo model](tempo-model.md) for what the values mean.
 
 ## Install
@@ -21,7 +21,7 @@ import createTempoMapCalc from "@timedomain/acestudio-tempo-map-calc";
 const mod = await createTempoMapCalc();
 const calc = new mod.TempoMapCalc();
 
-// Three parallel arrays — positions in ticks, BPMs, bends — sorted strictly ascending by position.
+// Three parallel arrays (positions in ticks, BPMs, bends), sorted strictly ascending by position.
 // Re-hydrate whenever the tempo map changes.
 calc.hydrate([480, 1440, 2400], [120, 180, 90], [0, 0, 0]);
 
@@ -29,7 +29,7 @@ calc.pos2Time(960); // seconds at tick 960
 calc.time2Pos(1.5); // tick position at 1.5 s
 ```
 
-`hydrate()` handles the `bendFactor` precomputation and the time-axis anchoring for you — the two
+`hydrate()` handles the `bendFactor` precomputation and the time-axis anchoring for you: the two
 [caller obligations](cpp-api.md#what-the-caller-owns) of the C++ API. It clamps to the shortest of
 the three arrays, so a partial or mismatched snapshot can never over-read.
 

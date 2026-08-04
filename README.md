@@ -3,7 +3,7 @@
 The exact math [ACE Studio](https://acestudio.ai) uses to convert between musical position (ticks)
 and wall-clock time (seconds) across a curve of tempo changes.
 
-- **Canonical, not approximated.** This is the code the DAW runs — not a reimplementation, and not a
+- **Canonical, not approximated.** This is the code the DAW runs, not a reimplementation and not a
   dense-sampling estimate of someone else's curve.
 - **Dependency-free C++23.** One header, one source file. No framework, no event loop, no
   allocations on the conversion path.
@@ -15,7 +15,7 @@ and wall-clock time (seconds) across a curve of tempo changes.
 
 There's no standard for the exact *shape* of a tempo ramp. Given two control points at different
 BPMs, nothing pins down how the tempo moves between them, and DAWs don't expose the curve they use.
-Tools that sync tempo (ARA, for one) don't match it — they approximate, typically by sampling
+Tools that sync tempo (ARA, for one) don't match it. They approximate, typically by sampling
 densely enough to keep the error bounded.
 
 This is the curve itself, so you don't have to approximate: an extension, a companion tool, or
@@ -35,7 +35,7 @@ import createTempoMapCalc from "@timedomain/acestudio-tempo-map-calc";
 const mod = await createTempoMapCalc();
 const calc = new mod.TempoMapCalc();
 
-// Control points as three parallel arrays — ticks, BPMs, bends — strictly ascending by position.
+// Control points as three parallel arrays (ticks, BPMs, bends), strictly ascending by position.
 calc.hydrate([480, 1440, 2400], [120, 180, 90], [0, 0, 0]);
 
 calc.pos2Time(960); // → seconds at tick 960
@@ -61,17 +61,17 @@ const double seconds = pos2Time(points, 960.0);
 
 ## Documentation
 
-Start with the model — the APIs are unsurprising once you know what a control point means.
+Both API references assume the terms defined in the tempo model, so start there.
 
-- **[The tempo model](docs/tempo-model.md)** — what a tempo map *is* here: ticks, control points, how
+- **[The tempo model](docs/tempo-model.md)**: what a tempo map *is* here. Ticks, control points, how
   tempo interpolates between them, what `bend` shapes, and how the time axis is anchored.
-- **[C++ API](docs/cpp-api.md)** — the `std::span` conversion API, and the two things a caller owns
+- **[C++ API](docs/cpp-api.md)**: the `std::span` conversion API, and the two things a caller owns
   before converting.
-- **[JavaScript API](docs/javascript-api.md)** — the npm package in full: hydration, scalar and
+- **[JavaScript API](docs/javascript-api.md)**: the npm package in full. Hydration, scalar and
   zero-copy bulk conversion, object lifetime.
-- **[Porting to another language](docs/porting.md)** — the recipe, and how to prove your port agrees
+- **[Porting to another language](docs/porting.md)**: the recipe, and how to prove your port agrees
   with ACE Studio using the shared fixture.
-- **[Building and testing](docs/building.md)** — building from source, the native and WASM test
+- **[Building and testing](docs/building.md)**: building from source, the native and WASM test
   suites, and what CI proves.
 
 ## Contributing
@@ -84,4 +84,4 @@ the desktop app and into the published WebAssembly package.
 
 ## License
 
-[MIT](LICENSE) © Timedomain Inc.
+[MIT](LICENSE)

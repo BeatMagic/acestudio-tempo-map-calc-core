@@ -33,7 +33,7 @@ Two things must hold before you convert. The read-only functions assume both rat
 them:
 
 1. **Each point's `bendFactor` is `exp(bend)`,** and `recomputeTimes()` has run since the last edit.
-2. **Points are sorted strictly ascending by `pos`** — no two points share a position.
+2. **Points are sorted strictly ascending by `pos`**, so no two points share a position.
 
 ## Notes
 
@@ -45,6 +45,6 @@ them:
 ## Embedding it
 
 The whole core is [`include/TempoCurveCore.h`](../include/TempoCurveCore.h) plus
-[`src/TempoCurveCore.cpp`](../src/TempoCurveCore.cpp), with no third-party includes — so dropping
+[`src/TempoCurveCore.cpp`](../src/TempoCurveCore.cpp), with no third-party includes, so dropping
 those two files into an existing target works. The bundled CMake also exposes a `tempo_curve_core`
 static library target.
