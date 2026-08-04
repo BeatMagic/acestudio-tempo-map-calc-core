@@ -1,9 +1,10 @@
 // Analytic unit test for TempoCurveCore. It drives the std::span conversion API directly against
 // an independent closed-form oracle (elapsed time at a constant tempo), covering the lead-in,
-// straddling, all-negative, empty, curved, bent and corrupt-data cases. Bent segments have no
-// closed form, so they are pinned by the properties that do not need one: the equal-endpoint case
-// where bend must NOT curve anything (and the oracle still applies), monotonicity and invertibility
-// across both signs, and each sign deviating from the bend-free curve in its own direction. Because this target compiles
+// straddling, all-negative, empty, curved, bent and corrupt-data cases. Bent segments do have a
+// closed form in the core, but nothing independent to check it against, so they are pinned by the
+// properties that need no oracle: the equal-endpoint case where bend must NOT curve anything (and
+// the constant-tempo oracle does still apply), monotonicity and invertibility across both signs,
+// and each sign deviating from the bend-free curve in its own direction. Because this target compiles
 // TempoCurveCore.cpp with nothing extra on its include path, it also enforces the core's
 // dependency-free constraint: a stray include fails the build.
 //
@@ -195,7 +196,9 @@ void bendChangesTheCurveBySign()
     auto positive = makePoints({{0.0, 120.0, 2.0}, {1920.0, 180.0, 0.0}});
     auto negative = makePoints({{0.0, 120.0, -2.0}, {1920.0, 180.0, 0.0}});
 
-    // Interior samples only: tick 0 is pinned for every curve, so it can never show a difference.
+    // Every sample past tick 0. The anchor at tick 0 is the one position pinned for every curve, so
+    // it can never show a difference; the closing control point (1920) is not pinned and is asserted
+    // like the rest, because bend changes the segment's integral and so its total duration.
     for (const double pos : {480.0, 960.0, 1440.0, 1920.0}) {
         const double s = pos2Time(straight, pos);
         const double p = pos2Time(positive, pos);

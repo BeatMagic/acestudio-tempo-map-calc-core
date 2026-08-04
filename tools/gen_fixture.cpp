@@ -220,11 +220,13 @@ int main()
     }
 
     // --- bendPositiveRamp / bendNegativeRamp: a single curved segment each, one accelerating and
-    // one decelerating. bend shapes the ramp exponentially (bendFactor = exp(bend)), so these have
-    // no closed form and the canonical core output is the golden. Sampled at both control points,
-    // one tick either side of each, and interior quarters — the interior is where a port that
-    // ignored bend, or applied it with the wrong sign, diverges while still matching at the
-    // endpoints (which recomputeTimes pins regardless of curve shape). ---
+    // one decelerating. bend shapes the ramp exponentially (bendFactor = exp(bend)). The core has a
+    // closed form for that, but nothing independent to check the form against, so the canonical core
+    // output is the golden. Sampled at both control points, one tick either side of each, and
+    // interior quarters. A port that ignored bend, or applied it with the wrong sign, diverges over
+    // all of it: bend changes the segment's integral, not just its shape, so it moves the interior
+    // AND the time at the control point closing the segment. Only tick 0 — the origin
+    // recomputeTimes anchors — is invariant. ---
     for (const auto &[name, from, to, bend] : {std::tuple {"bendPositiveRamp", 120.0, 180.0, 2.0},
                                                std::tuple {"bendNegativeRamp", 180.0, 90.0, -1.5}}) {
         const double end = 1920.0;
