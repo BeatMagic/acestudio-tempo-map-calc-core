@@ -7,7 +7,8 @@
 // to WebAssembly (or ported) without change. The standalone tst_TempoCurveCore target builds it
 // with nothing extra on its include path, so a stray dependency fails the build.
 //
-// See README.md for the tempo-curve model and the public API; src/TempoCurveCore.cpp for the math.
+// See docs/tempo-model.md for the tempo-curve model and docs/cpp-api.md for this API;
+// src/TempoCurveCore.cpp for the math.
 
 #ifndef TEMPO_CURVE_CORE_H
 #define TEMPO_CURVE_CORE_H
