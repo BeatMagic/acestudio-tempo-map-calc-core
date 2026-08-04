@@ -51,11 +51,17 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j
 ```
 
 ```cpp
+#include <cmath>
+#include <vector>
+
 #include "TempoCurveCore.h"
 using namespace tempo_curve;
 
-std::vector<TempoPoint> points { /* pos, bpm, bend, bendFactor = exp(bend) */ };
-recomputeTimes(points);                          // once, after building or editing
+std::vector<TempoPoint> points {
+    {.pos = 0.0, .bpm = 120.0},                                             // bend 0, bendFactor 1
+    {.pos = 1920.0, .bpm = 180.0, .bend = 0.5, .bendFactor = std::exp(0.5)},
+};
+recomputeTimes(points);                        // after building or editing the points
 const double seconds = pos2Time(points, 960.0);
 ```
 
