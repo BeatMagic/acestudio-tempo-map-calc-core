@@ -17,6 +17,17 @@ right direction.
 
 Documentation corrections are simpler, and welcome.
 
+## Ports to other languages
+
+Welcome, and they tend to work best as their own project. Keeping a port in your own repo lets it
+follow your language's conventions and release on its own schedule, which someone fluent in that
+language will do better than we would from here.
+
+[docs/porting.md](docs/porting.md) has the recipe and the traps, and
+[the shared fixture](fixtures/tempo_curve_cases.json) is how you show the port agrees with ACE Studio.
+Tell us about it in an issue once it works and we are happy to point people to it. If supporting your
+language needs something from this side, say so there too and we can work out how together.
+
 ---
 
 Release and maintenance mechanics live in [MAINTAINERS.md](MAINTAINERS.md).

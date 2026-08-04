@@ -74,11 +74,6 @@ Both API references assume the terms defined in the tempo model, so start there.
 - **[Building and testing](docs/building.md)**: building from source, the native and WASM test
   suites, and what CI proves.
 
-## Contributing
-
-Issues are welcome, and are the most useful thing you can send. If you are considering a code change,
-open an issue first: these files are shared source, so see [CONTRIBUTING.md](CONTRIBUTING.md).
-
 ## License
 
 [MIT](LICENSE)
