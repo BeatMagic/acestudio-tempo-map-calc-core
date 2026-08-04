@@ -79,8 +79,7 @@ Both API references assume the terms defined in the tempo model, so start there.
 Issues and pull requests are welcome. One constraint is load-bearing: the core stays dependency-free
 and framework-free under both a plain toolchain and Emscripten, because the same file compiles into
 the desktop app and into the published WebAssembly package.
-[MAINTAINERS.md](MAINTAINERS.md) has the full shared-source contract, and
-[AGENTS.md](AGENTS.md) is the same ground rules written for coding agents.
+[MAINTAINERS.md](MAINTAINERS.md) has the full shared-source contract.
 
 ## License
 
